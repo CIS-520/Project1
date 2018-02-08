@@ -92,7 +92,8 @@ timer_sleep (int64_t ticks)
   int64_t start = timer_ticks ();
 
   struct thread *t = thread_current();
-
+  t->wakeup_ticks = start + ticks;
+  t->waiting_for = TIME_EVENT; //we don't know where time event will be changed
   enum intr_level old_level = intr_disable(); //this will disable the interupt, meaning the CPU can't interrupt this current running process.
 
 
