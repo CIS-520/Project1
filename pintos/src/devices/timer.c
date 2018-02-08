@@ -91,10 +91,17 @@ timer_sleep (int64_t ticks)
 {
   int64_t start = timer_ticks ();
 
-  ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+  struct thread *t = thread_current();
+
+  enum intr_level old_level = intr_disable(); //this will disable the interupt, meaning the CPU can't interrupt this current running process.
+
+
+  thread_block(); // blocks the thread.
+
+  intr_set_level(old_level); //this turns the interupt back on. 
+
 }
+
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
    turned on. */
