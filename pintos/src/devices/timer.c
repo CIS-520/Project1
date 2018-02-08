@@ -19,6 +19,8 @@
 
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
+/* creating the blocked queue */
+static list blocked_queue;
 
 /* Number of loops per timer tick.
    Initialized by timer_calibrate(). */
@@ -94,12 +96,15 @@ timer_sleep (int64_t ticks)
   struct thread *t = thread_current();
   t->wakeup_ticks = start + ticks;
   t->waiting_for = TIME_EVENT; //we don't know where time event will be changed
+
+  
   enum intr_level old_level = intr_disable(); //this will disable the interupt, meaning the CPU can't interrupt this current running process.
 
 
   thread_block(); // blocks the thread.
-
-  intr_set_level(old_level); //this turns the interupt back on. 
+  	list_init(&blocked_queue);
+	list_push_back(&blocked_queue, t->elem); 
+	intr_set_level(old_level); //this turns the interupt back on. 
 
 }
 
@@ -178,8 +183,12 @@ timer_print_stats (void)
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
+
+  
   ticks++;
-  thread_tick ();
+  thread_tick (); // this method adds to the threads tick_count and checks the quantum. Interrupt yield on return?
+
+
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
