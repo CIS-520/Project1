@@ -20,7 +20,7 @@
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
 /* creating the blocked queue */
-static list blocked_queue;
+static struct list blocked_queue;
 
 /* Number of loops per timer tick.
    Initialized by timer_calibrate(). */
@@ -91,11 +91,19 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
+
+	ASSERT(intr_get_level() == INTR_ON);
+  if (ticks <0 ) {
+  
+	  return;
+  
+  }
+
   int64_t start = timer_ticks ();
 
   struct thread *t = thread_current();
   t->wakeup_ticks = start + ticks;
-  t->waiting_for = TIME_EVENT; //we don't know where time event will be changed
+  //t->waiting_for = TIME_EVENT; //we don't know where time event will be changed
 
   
   enum intr_level old_level = intr_disable(); //this will disable the interupt, meaning the CPU can't interrupt this current running process.
@@ -103,7 +111,7 @@ timer_sleep (int64_t ticks)
 
   thread_block(); // blocks the thread.
   	list_init(&blocked_queue);
-	list_push_back(&blocked_queue, t->elem); 
+	list_push_back(&blocked_queue, &t->elem); 
 	intr_set_level(old_level); //this turns the interupt back on. 
 
 }
@@ -184,11 +192,18 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
 
-  
-  ticks++;
-  thread_tick (); // this method adds to the threads tick_count and checks the quantum. Interrupt yield on return?
+ if (list_empty(&blocked_queue) > 0 ) {
+	 return;
+ }
+// do we need to disable the interrupts?
+struct thread *head = list_head(&blocked_queue);
+if (head->wakeup_ticks >= ticks && head->status == THREAD_BLOCKED){
+ struct thread *t = list_pop_front(&blocked_queue);
+thread_unblock(t); 
+  //ticks++;
+  //thread_tick (); // this method adds to the threads tick_count and checks the quantum. Interrupt yield on return?
 
-
+}
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

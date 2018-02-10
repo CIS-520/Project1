@@ -93,6 +93,7 @@ struct thread
     int64_t wakeup_ticks;               /* the time that this thread needs to wake up */
     int8_t waiting_for; 		/* which timed event is this waiting for or not */
 
+    int64_t wakeup_ticks;
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
