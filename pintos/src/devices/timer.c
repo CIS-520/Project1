@@ -92,8 +92,9 @@ void
 timer_sleep (int64_t ticks) 
 {
 
+	printf("entering timer_sleep function\n");
 	ASSERT(intr_get_level() == INTR_ON);
-  if (ticks <0 ) {
+  if (ticks <=0 ) {
   
 	  return;
   
@@ -110,7 +111,8 @@ timer_sleep (int64_t ticks)
 
 
   thread_block(); // blocks the thread.
-  	list_init(&blocked_queue);
+  //	list_init(&blocked_queue);
+  printf("thread has been blocked");
 	list_push_back(&blocked_queue, &t->elem); 
 	intr_set_level(old_level); //this turns the interupt back on. 
 
@@ -191,19 +193,27 @@ timer_print_stats (void)
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
-
+ticks++;
+thread_tick();
+printf("thread has ticked\n");
  if (list_empty(&blocked_queue) > 0 ) {
+	printf("inside checking if the list is empty\n");
 	 return;
  }
 // do we need to disable the interrupts?
-struct thread *head = list_head(&blocked_queue);
+struct list_elem *e = list_head(&blocked_queue);
+struct thread *head;
+head = list_entry(e, struct thread, elem);
 if (head->wakeup_ticks >= ticks && head->status == THREAD_BLOCKED){
- struct thread *t = list_pop_front(&blocked_queue);
-thread_unblock(t); 
-  //ticks++;
-  //thread_tick (); // this method adds to the threads tick_count and checks the quantum. Interrupt yield on return?
+//struct thread *t =
+list_pop_front(&blocked_queue);
+thread_unblock(head);
+printf("thread has been unblocked\n");
 
 }
+else
+{
+printf("queue is not empty, but thread is not unblocked\n");}
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
