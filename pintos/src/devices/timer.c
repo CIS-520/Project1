@@ -91,6 +91,7 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
+	
 
 	printf("entering timer_sleep function\n");
 	ASSERT(intr_get_level() == INTR_ON);
@@ -188,7 +189,7 @@ timer_print_stats (void)
 {
   printf ("Timer: %"PRId64" ticks\n", timer_ticks ());
 }
-
+
 /* Timer interrupt handler. */
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
@@ -201,21 +202,23 @@ printf("thread has ticked\n");
 	 return;
  }
 // do we need to disable the interrupts?
-struct list_elem *e = list_head(&blocked_queue);
-struct thread *head;
-head = list_entry(e, struct thread, elem);
-if (head->wakeup_ticks >= ticks && head->status == THREAD_BLOCKED){
+struct list_elem *e; 
+for (e =list_begin(&blocked_queue); e!=list_end(&blocked_queue);){
+
+struct thread *head= list_entry(e, struct thread, elem);
+if (ticks >= head->wakeup_ticks){// && head->status == THREAD_BLOCKED){
 //struct thread *t =
-list_pop_front(&blocked_queue);
+e= list_remove(e);
 thread_unblock(head);
 printf("thread has been unblocked\n");
-
 }
+
 else
 {
+	e = list_next(e);
 printf("queue is not empty, but thread is not unblocked\n");}
 }
-
+}
 /* Returns true if LOOPS iterations waits for more than one timer
    tick, otherwise false. */
 static bool
