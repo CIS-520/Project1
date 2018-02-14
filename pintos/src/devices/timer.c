@@ -39,6 +39,8 @@ timer_init (void)
 {
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
+
+  list_init(&blocked_queue);
 }
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
@@ -103,12 +105,12 @@ timer_sleep (int64_t ticks)
 
   int64_t start = timer_ticks ();
 
+  enum intr_level old_level = intr_disable(); //this will disable the interupt, meaning the CPU can't interrupt this current running process.
   struct thread *t = thread_current();
   t->wakeup_ticks = start + ticks;
   //t->waiting_for = TIME_EVENT; //we don't know where time event will be changed
 
   
-  enum intr_level old_level = intr_disable(); //this will disable the interupt, meaning the CPU can't interrupt this current running process.
 
 
   thread_block(); // blocks the thread.
@@ -195,18 +197,17 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
 ticks++;
-thread_tick();
 
 
-  enum intr_level old_level = intr_disable(); //this will disable the interupt, meaning the CPU can't interrupt this current running process.
-printf("thread has ticked\n");
- if (list_empty(&blocked_queue) > 0 ) {
-	printf("inside checking if the list is empty\n");
-	 return;
- }
+ // enum intr_level old_level = intr_disable(); //this will disable the interupt, meaning the CPU can't interrupt this current running process.
+//printf("thread has ticked\n");
+ //if (list_empty(&blocked_queue) > 0 ) {
+//	printf("inside checking if the list is empty\n");
+//	 return;
+ //}
 // do we need to disable the interrupts?
 struct list_elem *e; 
-for (e =list_begin(&blocked_queue); e!=list_end(&blocked_queue);){
+for (e =list_begin(&blocked_queue); e!=list_end(&blocked_queue);e=list_next(e)){
 
 struct thread *head= list_entry(e, struct thread, elem);
 if (ticks >= head->wakeup_ticks){// && head->status == THREAD_BLOCKED){
@@ -218,11 +219,12 @@ printf("thread has been unblocked\n");
 
 else
 {
-	e = list_next(e);
+	break;
 printf("queue is not empty, but thread is not unblocked\n");}
 }
 
-	intr_set_level(old_level); //this turns the interupt back on. 
+thread_tick();
+//	intr_set_level(old_level); //this turns the interupt back on. 
 }
 /* Returns true if LOOPS iterations waits for more than one timer
    tick, otherwise false. */
