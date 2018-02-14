@@ -112,7 +112,7 @@ timer_sleep (int64_t ticks)
 
 
   thread_block(); // blocks the thread.
-  //	list_init(&blocked_queue);
+//  list_init(&blocked_queue);
   printf("thread has been blocked");
 	list_push_back(&blocked_queue, &t->elem); 
 	intr_set_level(old_level); //this turns the interupt back on. 
@@ -196,6 +196,10 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
 ticks++;
 thread_tick();
+
+	ASSERT(intr_get_level() == INTR_ON);
+
+  enum intr_level old_level = intr_disable(); //this will disable the interupt, meaning the CPU can't interrupt this current running process.
 printf("thread has ticked\n");
  if (list_empty(&blocked_queue) > 0 ) {
 	printf("inside checking if the list is empty\n");
@@ -218,6 +222,8 @@ else
 	e = list_next(e);
 printf("queue is not empty, but thread is not unblocked\n");}
 }
+
+	intr_set_level(old_level); //this turns the interupt back on. 
 }
 /* Returns true if LOOPS iterations waits for more than one timer
    tick, otherwise false. */
