@@ -141,4 +141,6 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
+//this is also not mine, it goes with the function in timer.c that isn't mine
+bool thread_wakeup_ticks_less(const struct list_elem *, const struct list_elem *, void *);
 #endif /* threads/thread.h */

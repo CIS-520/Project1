@@ -114,9 +114,10 @@ timer_sleep (int64_t ticks)
 
 
 //  list_init(&blocked_queue);
-  printf("thread has been blocked");
-	list_push_back(&blocked_queue, &t->elem); 
-	
+  printf("thread has been blocked\n");
+//	list_push_back(&blocked_queue, &t->elem); 
+	list_insert_ordered(&blocked_queue, &t->elem,(list_less_func *)&thread_wakeup_ticks_less, NULL);
+
   thread_block(); // blocks the thread.
 	intr_set_level(old_level); //this turns the interupt back on. 
 
@@ -208,7 +209,7 @@ ticks++;
  //}
 // do we need to disable the interrupts?
 struct list_elem *e; 
-for (e =list_begin(&blocked_queue); e!=list_end(&blocked_queue);e =list_next(e)){
+for (e =list_begin(&blocked_queue); e!=list_end(&blocked_queue);e = list_next(e)){
 
 struct thread *head= list_entry(e, struct thread,elem);
 if (timer_ticks() >= head->wakeup_ticks){// && head->status == THREAD_BLOCKED){

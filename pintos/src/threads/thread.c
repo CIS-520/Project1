@@ -71,6 +71,7 @@ static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 
+
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
    general and it is possible in this case only because loader.S
@@ -541,7 +542,17 @@ thread_schedule_tail (struct thread *prev)
       palloc_free_page (prev);
     }
 }
+// the following methos is not mine, and I took it from the following link
+// github.com/microdog/pintos-project-1
+//
+bool
+thread_wakeup_ticks_less (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED){
 
+
+	struct thread *pta = list_entry(a, struct thread, elem);
+	struct thread *ptb = list_entry(b, struct thread, elem);
+	return pta->wakeup_ticks < ptb->wakeup_ticks;
+}
 /* Schedules a new process.  At entry, interrupts must be off and
    the running process's state must have been changed from
    running to some other state.  This function finds another
