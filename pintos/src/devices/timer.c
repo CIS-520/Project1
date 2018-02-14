@@ -197,7 +197,6 @@ timer_interrupt (struct intr_frame *args UNUSED)
 ticks++;
 thread_tick();
 
-	ASSERT(intr_get_level() == INTR_ON);
 
   enum intr_level old_level = intr_disable(); //this will disable the interupt, meaning the CPU can't interrupt this current running process.
 printf("thread has ticked\n");
