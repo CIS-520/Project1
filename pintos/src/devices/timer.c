@@ -94,33 +94,36 @@ void
 timer_sleep (int64_t ticks) 
 {
 	
+  struct thread *t = thread_current();
+  //int64_t start = timer_ticks ();
+  t->wakeup_ticks = timer_ticks() + ticks;
+  //t->waiting_for = TIME_EVENT; //we don't know where time event will be changed
 
 	printf("entering timer_sleep function\n");
 	ASSERT(intr_get_level() == INTR_ON);
-  if (ticks <=0 ) {
+//  if (ticks <=0 ) {
+ 
+//	  return;
   
-	  return;
-  
-  }
+ // }
 
-  int64_t start = timer_ticks ();
 
-  enum intr_level old_level = intr_disable(); //this will disable the interupt, meaning the CPU can't interrupt this current running process.
-  struct thread *t = thread_current();
-  t->wakeup_ticks = start + ticks;
-  //t->waiting_for = TIME_EVENT; //we don't know where time event will be changed
+  //enum intr_level old_level = intr_disable(); //this will disable the interupt, meaning the CPU can't interrupt this current running process.
+  //maybe this one line??? order
+intr_disable();
+ 
 
-  
-
+    sema_init(&t->timer_sema, 0);
 
 //  list_init(&blocked_queue);
   printf("thread has been blocked\n");
-//	list_push_back(&blocked_queue, &t->elem); 
-	list_insert_ordered(&blocked_queue, &t->elem,(list_less_func *)&thread_wakeup_ticks_less, NULL);
+	list_push_back(&blocked_queue, &t->wait_elem); 
+	//list_insert_ordered(&blocked_queue, &t->wait_elem,(list_less_func *)&thread_wakeup_ticks_less, NULL);
 
-  thread_block(); // blocks the thread.
-	intr_set_level(old_level); //this turns the interupt back on. 
+//	intr_set_level(old_level); //this turns the interupt back on. 
+	intr_enable();
 
+sema_down(&t->timer_sema);
 }
 
 
@@ -198,49 +201,83 @@ timer_print_stats (void)
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
-ticks++;
+	ticks++;
+	thread_tick();
+	while (!list_empty(&blocked_queue))
+			{
+		struct thread *t = list_entry(list_front(&blocked_queue), struct thread, wait_elem);
+		if (ticks < t->wakeup_ticks){
+			break;
+		}
+		sema_up(&t->timer_sema);
+		printf("sema up");
+		list_pop_front(&blocked_queue);
+	}
+
+		//thread_yield();
+		//thread_yield_to_higher_priority();
+	//printf("thread has ticked\n");
+	 //if (list_empty(&blocked_queue) > 0 ) {
+	//	printf("inside checking if the list is empty\n");
+	//	 return;
+	 //}
+	// do we need to disable the interrupts?
+	 // enum intr_level old_level = intr_disable(); //this will disable the interupt, meaning the CPU can't interrupt this current running process.
+	//struct list_elem *e; 
+	//int count= 0;
+	//struct list_elem *a; 
+//	for (a =list_begin(&blocked_queue); a!=list_end(&blocked_queue);a = list_next(a)){
+
+//		count= count+1; 
+//		printf("%d\n", count);
+//	}
+
+/*		for (e =list_begin(&blocked_queue); e!=list_end(&blocked_queue);)
+		{
+
+			count= count+1; 
+			printf("%d\n", count);
+			struct thread *t= list_entry(e, struct thread,wait_elem);
+			int64_t now = timer_ticks();
+			if (now >= t->wakeup_ticks)
+			{
+				// && head->status == THREAD_BLOCKED){
+				//struct thread *t =
+				e = list_remove(e);
+				thread_unblock(t);
+
+				printf("thread has been unblocked and added to ready_list\n");
 
 
- // enum intr_level old_level = intr_disable(); //this will disable the interupt, meaning the CPU can't interrupt this current running process.
-//printf("thread has ticked\n");
- //if (list_empty(&blocked_queue) > 0 ) {
-//	printf("inside checking if the list is empty\n");
-//	 return;
- //}
-// do we need to disable the interrupts?
-struct list_elem *e; 
-for (e =list_begin(&blocked_queue); e!=list_end(&blocked_queue);e = list_next(e)){
+			//	intr_set_level(old_level); //this turns the interupt back on. 
+				//return;
+			}
+			else
+			{
+				//break;
+				printf("timer ticks");
+				printf("%" PRId64 "\n", timer_ticks());
+				printf("thread ticks");
+				printf("%" PRId64 "\n", t->wakeup_ticks);
+				printf("queue is not empty, but thread is not unblocked\n");
+			}
+		}
 
-struct thread *head= list_entry(e, struct thread,elem);
-if (timer_ticks() >= head->wakeup_ticks){// && head->status == THREAD_BLOCKED){
-//struct thread *t =
-thread_unblock(head);
+	thread_tick(); */
 
-e= list_remove(e);
-printf("thread has been unblocked\n");
 }
+		/* Returns true if LOOPS iterations waits for more than one timer
+	   tick, otherwise false. */
+	static bool
+	too_many_loops (unsigned loops) 
+	{
+	  /* Wait for a timer tick. */
+	  int64_t start = ticks;
+	  while (ticks == start)
+	    barrier ();
 
-else
-{
-	break;
-printf("queue is not empty, but thread is not unblocked\n");}
-}
-
-thread_tick();
-//	intr_set_level(old_level); //this turns the interupt back on. 
-}
-/* Returns true if LOOPS iterations waits for more than one timer
-   tick, otherwise false. */
-static bool
-too_many_loops (unsigned loops) 
-{
-  /* Wait for a timer tick. */
-  int64_t start = ticks;
-  while (ticks == start)
-    barrier ();
-
-  /* Run LOOPS loops. */
-  start = ticks;
+	  /* Run LOOPS loops. */
+	  start = ticks;
   busy_wait (loops);
 
   /* If the tick count changed, we iterated too long. */

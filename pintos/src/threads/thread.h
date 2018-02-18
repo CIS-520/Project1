@@ -4,6 +4,7 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
+#include "synch.h"
 
 #define TIME_EVENT 0
 /* States in a thread's life cycle. */
@@ -95,6 +96,11 @@ struct thread
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
+    
+    /* List elem that we will use for wait_list */
+    struct list_elem wait_elem;
+
+    struct semaphore timer_sema; 
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
