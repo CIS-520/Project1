@@ -96,6 +96,14 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
+    //data structures for priority scheduling
+    int orig_priority; //restore after donating priority
+    struct lock *wait_lock; 
+    struct thread *blocked;
+    struct list blocked_l; //list of elements blocked by this thread
+    
+
+
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
