@@ -210,10 +210,12 @@ timer_interrupt (struct intr_frame *args UNUSED)
 			break;
 		}
 		sema_up(&t->timer_sema);
-		//thread_yield_to_higher_priority();
+		printf("sema up");
 		list_pop_front(&blocked_queue);
 	}
 
+		//thread_yield();
+		//thread_yield_to_higher_priority();
 	//printf("thread has ticked\n");
 	 //if (list_empty(&blocked_queue) > 0 ) {
 	//	printf("inside checking if the list is empty\n");
