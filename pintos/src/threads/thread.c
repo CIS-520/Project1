@@ -336,14 +336,53 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  thread_current ()->priority = new_priority;
+    int old_priority;
+    enum intr_level old_level = intr_disable();
+    intr_set_level(old_level);
+    struct thread *t = thread_current();
+    struct *max;
+    //get current thread priority - soon to be the old one
+    old_priority = thread_current()->priority;
+    if(t->blocked==NULL)
+    {
+        t->priority = new_priority;
+        t->orig_priority = new_priority;
+    }
+    else{
+        if(t->priority < new_priority){ t->orig_priority = new_priority; }
+        else{ t->orig_priority = new_priority; }
+    }
+        
+    if(!list_empty(&t->blocked_l))
+    {
+        t = list_entry(list_max(&t->blocked_l,
+                    thread_lower_priority,NULL),struct thread, blocked);
+        if(t->priority < max->priority){ t->priority = max->priority }
+    }
+
+    //yield to higher priority 
+    if(!list_empty())
+    {
+       max = list_entry(list_max(&ready_list, 
+                   thread_lower_priority, NULL), struct thread, elem); 
+        if(max->priority > t->priority)
+        {
+            if(!intr_context()){thread_yield();}
+            else{ intr_yield_on_return(); }
+        }
+    }
+    intr_set_level(old_level);
+
+//  thread_current ()->priority = new_priority;
 }
 
 /* Returns the current thread's priority. */
 int
 thread_get_priority (void) 
 {
-  return thread_current ()->priority;
+    enum intr_level old_level = intr_disable();
+    intr_set_level(old_level);
+    return thread_current ()->priority;
 }
 
 /* Sets the current thread's nice value to NICE. */
